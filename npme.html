@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>npme — Gaming Social Network</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            neon: '#00FF41',
+            'neon-dim': '#00CC33',
+            'neon-glow': '#00FF4115',
+            'neon-border': '#00FF4155',
+            'bg-deep': '#080A08',
+            'bg-card': '#0D110D',
+            'bg-surface': '#111811',
+            'bg-panel': '#090C09',
+          },
+          fontFamily: {
+            display: ['Orbitron', 'sans-serif'],
+            body: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          boxShadow: {
+            neon: '0 0 20px #00FF4144, 0 0 40px #00FF4122',
+            'neon-sm': '0 0 8px #00FF4166',
+            'neon-lg': '0 0 40px #00FF4155, 0 0 80px #00FF4122',
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    * { scrollbar-width: thin; scrollbar-color: #00FF4133 transparent; }
+    *::-webkit-scrollbar { width: 4px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb { background: #00FF4133; border-radius: 2px; }
+
+    body { background-color: #080A08; font-family: 'Inter', sans-serif; color: #d1ffd1; }
+
+    .neon-text { color: #00FF41; text-shadow: 0 0 10px #00FF4199, 0 0 20px #00FF4155; }
+    .neon-input {
+      background: #0A0F0A;
+      border: 1px solid #00FF4133;
+      color: #d1ffd1;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .neon-input:focus { outline: none; border-color: #00FF41; box-shadow: 0 0 12px #00FF4133; }
+    .neon-input::placeholder { color: #00FF4155; }
+
+    .neon-btn {
+      background: transparent;
+      border: 1px solid #00FF4166;
+      color: #00FF41;
+      transition: all 0.15s ease;
+    }
+    .neon-btn:hover { background: #00FF4115; box-shadow: 0 0 12px #00FF4133; }
+
+    .neon-btn-solid {
+      background: #00FF41;
+      color: #080A08;
+      border: 1px solid #00FF41;
+      font-weight: 700;
+      transition: all 0.15s ease;
+    }
+    .neon-btn-solid:hover { background: #00DD38; box-shadow: 0 0 20px #00FF4177; }
+
+    .card-game {
+      background: #0D110D;
+      border: 1px solid #00FF4120;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .card-game:hover { border-color: #00FF4144; }
+
+    .nav-item {
+      color: #4a7a4a;
+      transition: color 0.15s;
+      border-bottom: 2px solid transparent;
+      padding-bottom: 2px;
+    }
+    .nav-item:hover { color: #00FF4199; }
+    .nav-item.active { color: #00FF41; text-shadow: 0 0 8px #00FF4177; border-bottom-color: #00FF41; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .grid-bg {
+      background-image: linear-gradient(#00FF4108 1px, transparent 1px),
+                        linear-gradient(90deg, #00FF4108 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    .avatar-ring { border: 2px solid #00FF41; box-shadow: 0 0 0 2px #00FF4133; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .post-card { animation: fadeInUp 0.25s ease forwards; }
+
+    @keyframes scanline {
+      0%   { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
+    }
+    .scanline {
+      position: fixed; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, #00FF4155, transparent);
+      animation: scanline 8s linear infinite;
+      pointer-events: none; z-index: 9999;
+    }
+
+    @keyframes pulseneon {
+      0%, 100% { box-shadow: 0 0 6px #00FF4166; }
+      50%       { box-shadow: 0 0 18px #00FF41aa; }
+    }
+    .pulse-neon { animation: pulseneon 2s ease-in-out infinite; }
+
+    .like-btn { color: #4a7a4a; transition: color 0.15s; }
+    .like-btn.liked { color: #00FF41; text-shadow: 0 0 6px #00FF41; }
+
+    .duel-card {
+      background: linear-gradient(135deg, #0D110D, #0a120a);
+      border: 1px solid #00FF4133;
+      position: relative;
+    }
+
+    .badge-item {
+      background: linear-gradient(135deg, #0D110D, #111d11);
+      border: 1px solid #00FF4122;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .badge-item:hover { border-color: #00FF4166; box-shadow: 0 0 16px #00FF4122; }
+
+    #screen-auth { display: flex; }
+    #screen-main { display: none; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <div class="scanline"></div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- TELA 1 — AUTH                                                  -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div id="screen-auth" class="min-h-screen grid-bg items-center justify-center px-4 py-12 relative">
+    <div class="absolute top-1/3 left-1/4 w-72 h-72 rounded-full pointer-events-none"
+      style="background:radial-gradient(circle,#00FF4112 0%,transparent 70%)"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-56 h-56 rounded-full pointer-events-none"
+      style="background:radial-gradient(circle,#00FF4108 0%,transparent 70%)"></div>
+
+    <div class="w-full max-w-md relative z-10 mx-auto">
+
+      <!-- Logo -->
+      <div class="text-center mb-10">
+        <h1 class="font-display text-6xl font-black tracking-widest neon-text" style="letter-spacing:.15em">npme</h1>
+        <p class="font-mono text-xs mt-2 tracking-widest uppercase" style="color:#00FF4166">// Gaming Social Network</p>
+        <div class="h-px mt-4 mx-auto w-48" style="background:linear-gradient(90deg,transparent,#00FF4155,transparent)"></div>
+      </div>
+
+      <!-- Tab switcher -->
+      <div class="flex mb-5 card-game rounded-lg p-1 gap-1">
+        <button id="tab-login-btn" onclick="switchAuthTab('login')"
+          class="flex-1 py-2 rounded-md font-display text-xs tracking-widest neon-btn-solid">LOGIN</button>
+        <button id="tab-register-btn" onclick="switchAuthTab('register')"
+          class="flex-1 py-2 rounded-md font-display text-xs tracking-widest" style="color:#4a7a4a">CADASTRO</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div id="form-login" class="card-game rounded-xl p-6">
+        <h2 class="font-display text-base font-bold neon-text mb-5 tracking-widest">ENTRAR NA ARENA</h2>
+        <form onsubmit="handleLogin(event)" class="flex flex-col gap-4">
+          <div>
+            <label class="block font-mono text-xs mb-1 tracking-widest uppercase" style="color:#00FF4177">E-mail</label>
+            <input id="login-email" type="email" placeholder="seu@email.com"
+              class="neon-input w-full rounded-lg px-4 py-2.5 font-body text-sm" />
+          </div>
+          <div>
+            <label class="block font-mono text-xs mb-1 tracking-widest uppercase" style="color:#00FF4177">Senha</label>
+            <input id="login-password" type="password" placeholder="••••••••"
+              class="neon-input w-full rounded-lg px-4 py-2.5 font-body text-sm" />
+          </div>
+          <div class="flex items-center justify-between font-mono text-xs" style="color:#4a7a4a">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="w-3 h-3" style="accent-color:#00FF41" /> Lembrar
+            </label>
+            <a href="#" class="neon-text hover:underline">Esqueci a senha</a>
+          </div>
+          <button id="btn-login" type="submit"
+            class="neon-btn-solid w-full py-2.5 rounded-lg font-display text-xs tracking-widest">
+            INICIAR SESSÃO
+          </button>
+        </form>
+        <p class="text-center font-mono text-xs mt-4 pt-4" style="border-top:1px solid #00FF4122;color:#2a4a2a">
+          Sem conta?
+          <button onclick="switchAuthTab('register')" class="neon-text hover:underline ml-1">Cadastre-se</button>
+        </p>
+      </div>
+
+      <!-- CADASTRO -->
+      <div id="form-register" class="card-game rounded-xl p-6 hidden">
+        <h2 class="font-display text-base font-bold neon-text mb-5 tracking-widest">CRIAR PERFIL</h2>
+        <form onsubmit="handleRegister(event)" class="flex flex-col gap-4">
+          <div>
+            <label class="block font-mono text-xs mb-1 tracking-widest uppercase" style="color:#00FF4177">Nick</label>
+            <input id="register-name" type="text" placeholder="Seu nickname"
+              class="neon-input w-full rounded-lg px-4 py-2.5 font-body text-sm" />
+          </div>
+          <div>
+            <label class="block font-mono text-xs mb-1 tracking-widest uppercase" style="color:#00FF4177">E-mail</label>
+            <input id="register-email" type="email" placeholder="seu@email.com"
+              class="neon-input w-full rounded-lg px-4 py-2.5 font-body text-sm" />
+          </div>
+          <div>
+            <label class="block font-mono text-xs mb-1 tracking-widest uppercase" style="color:#00FF4177">Senha</label>
+            <input id="register-password" type="password" placeholder="Mínimo 8 caracteres"
+              class="neon-input w-full rounded-lg px-4 py-2.5 font-body text-sm" />
+          </div>
+          <label class="flex items-start gap-2 font-mono text-xs cursor-pointer" style="color:#4a7a4a">
+            <input type="checkbox" class="mt-0.5 w-3 h-3 flex-shrink-0" style="accent-color:#00FF41" />
+            <span>Concordo com os <a href="#" class="neon-text hover:underline">Termos</a> e
+              <a href="#" class="neon-text hover:underline">Política</a></span>
+          </label>
+          <button id="btn-register" type="submit"
+            class="neon-btn-solid w-full py-2.5 rounded-lg font-display text-xs tracking-widest">
+            CRIAR CONTA
+          </button>
+        </form>
+        <p class="text-center font-mono text-xs mt-4 pt-4" style="border-top:1px solid #00FF4122;color:#2a4a2a">
+          Já tem conta?
+          <button onclick="switchAuthTab('login')" class="neon-text hover:underline ml-1">Entrar</button>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- TELA 2 — APP PRINCIPAL                                         -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div id="screen-main" class="min-h-screen flex flex-col">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-50" style="background:#090C09;border-bottom:1px solid #00FF4133">
+      <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+        <div class="flex items-center gap-3">
+          <span class="font-display font-black text-2xl neon-text tracking-widest">npme</span>
+          <span class="font-mono text-xs hidden sm:block" style="color:#00FF4133">// ARENA</span>
+        </div>
+
+        <!-- Desktop nav -->
+        <nav class="hidden lg:flex items-center gap-0.5" id="main-nav">
+          <button onclick="showTab('feed')"       data-tab="feed"       class="nav-item active  px-3 py-1 font-display text-xs tracking-wider">FEED</button>
+          <button onclick="showTab('highlights')" data-tab="highlights" class="nav-item px-3 py-1 font-display text-xs tracking-wider">HIGHLIGHTS</button>
+          <button onclick="showTab('tactical')"   data-tab="tactical"   class="nav-item px-3 py-1 font-display text-xs tracking-wider">TÁTICO</button>
+          <button onclick="showTab('videos')"     data-tab="videos"     class="nav-item px-3 py-1 font-display text-xs tracking-wider">VÍDEOS</button>
+          <button onclick="showTab('ranking')"    data-tab="ranking"    class="nav-item px-3 py-1 font-display text-xs tracking-wider">RANKING</button>
+          <button onclick="showTab('emblemas')"   data-tab="emblemas"   class="nav-item px-3 py-1 font-display text-xs tracking-wider">EMBLEMAS</button>
+          <button onclick="showTab('duels')"      data-tab="duels"      class="nav-item px-3 py-1 font-display text-xs tracking-wider">DUELOS</button>
+          <button onclick="showTab('store')"      data-tab="store"      class="nav-item px-3 py-1 font-display text-xs tracking-wider">LOJA</button>
+        </nav>
+
+        <div class="flex items-center gap-3">
+          <button class="relative neon-btn rounded-lg p-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <span class="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center font-display font-black"
+              style="background:#00FF41;color:#080A08;font-size:8px;line-height:1">3</span>
+          </button>
+          <div class="flex items-center gap-2 cursor-pointer">
+            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=40&h=40&fit=crop&auto=format"
+              alt="Avatar" class="w-8 h-8 rounded-full avatar-ring object-cover" />
+            <span id="user-display-name" class="font-display text-xs neon-text hidden sm:block">PLAYER_1</span>
+          </div>
+          <button onclick="handleLogout()" class="neon-btn rounded-lg px-3 py-1.5 font-mono text-xs">SAIR</button>
+        </div>
+      </div>
+
+      <!-- Mobile nav -->
+      <div class="lg:hidden flex overflow-x-auto gap-0.5 px-4 pb-2" style="border-top:1px solid #00FF4122">
+        <button onclick="showTab('feed')"       data-tab="feed"       class="nav-item active  whitespace-nowrap px-3 py-1 font-display text-xs">FEED</button>
+        <button onclick="showTab('highlights')" data-tab="highlights" class="nav-item whitespace-nowrap px-3 py-1 font-display text-xs">HIGHLIGHTS</button>
+        <button onclick="showTab('tactical')"   data-tab="tactical"   class="nav-item whitespace-nowrap px-3 py-1 font-display text-xs">TÁTICO</button>
+        <button onclick="showTab('videos')"     data-tab="videos"     class="nav-item whitespace-nowrap px-3 py-1 font-display text-xs">VÍDEOS</button>
+        <button onclick="showTab('ranking')"    data-tab="ranking"    class="nav-item whitespace-nowrap px-3 py-1 font-display text-xs">RANKING</button>
+        <button onclick="showTab('emblemas')"   data-tab="emblemas"   class="nav-item whitespace-nowrap px-3 py-1 font-display text-xs">EMBLEMAS</button>
+        <button onclick="showTab('duels')"      data-tab="duels"      class="nav-item whitespace-nowrap px-3 py-1 font-display text-xs">DUELOS</button>
+        <button onclick="showTab('store')"      data-tab="store"      class="nav-item whitespace-nowrap px-3 py-1 font-display text-xs">LOJA</button>
+      </div>
+    </header>
+
+    <!-- BODY -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="hidden lg:flex lg:col-span-3 flex-col gap-4">
+
+          <div class="card-game rounded-xl p-5 text-center">
+            <div class="relative inline-block mb-3">
+              <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop&auto=format"
+                alt="Avatar" class="w-20 h-20 rounded-full avatar-ring object-cover mx-auto" />
+              <span class="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center"
+                style="background:#00FF41;border:2px solid #080A08">
+                <span class="w-1.5 h-1.5 rounded-full" style="background:#080A08"></span>
+              </span>
+            </div>
+            <h3 id="sidebar-username" class="font-display font-bold neon-text text-sm tracking-widest">DARK_VIPER</h3>
+            <p class="font-mono text-xs mt-1" style="color:#2a5a2a">Nível 47 · Diamond II</p>
+            <div class="flex justify-around mt-4 pt-3" style="border-top:1px solid #00FF4122">
+              <div>
+                <p class="font-display font-bold neon-text text-lg">342</p>
+                <p class="font-mono text-xs" style="color:#2a5a2a">Seguidores</p>
+              </div>
+              <div class="px-4" style="border-left:1px solid #00FF4122;border-right:1px solid #00FF4122">
+                <p class="font-display font-bold neon-text text-lg">128</p>
+                <p class="font-mono text-xs" style="color:#2a5a2a">Seguindo</p>
+              </div>
+              <div>
+                <p class="font-display font-bold neon-text text-lg">89%</p>
+                <p class="font-mono text-xs" style="color:#2a5a2a">Win Rate</p>
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="flex justify-between font-mono text-xs mb-1" style="color:#2a5a2a">
+                <span>XP</span><span>8,240 / 10,000</span>
+              </div>
+              <div class="w-full rounded-full h-1.5" style="background:#0a1f0a">
+                <div class="h-1.5 rounded-full" style="width:82%;background:#00FF41;box-shadow:0 0 8px #00FF41"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-game rounded-xl p-4">
+            <p class="font-display text-xs tracking-widest mb-3" style="color:#2a5a2a">ATALHOS</p>
+            <nav class="flex flex-col gap-0.5">
+              <button onclick="showTab('feed')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-body text-left transition-colors hover:bg-neon-glow" style="color:#80c880">
+                🏠 Feed
+              </button>
+              <button onclick="showTab('ranking')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-body text-left transition-colors hover:bg-neon-glow" style="color:#80c880">
+                🏆 Ranking
+              </button>
+              <button onclick="showTab('duels')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-body text-left transition-colors hover:bg-neon-glow" style="color:#80c880">
+                ⚔️ Duelos
+              </button>
+              <button onclick="showTab('emblemas')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-body text-left transition-colors hover:bg-neon-glow" style="color:#80c880">
+                🎖️ Emblemas
+              </button>
+              <button onclick="showTab('store')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-body text-left transition-colors hover:bg-neon-glow" style="color:#80c880">
+                🛒 Loja
+              </button>
+            </nav>
+          </div>
+
+        </aside>
+
+        <!-- CENTER -->
+        <div class="lg:col-span-6">
+
+          <!-- ─── FEED ─── -->
+          <div id="tab-feed" class="tab-content active">
+
+            <!-- Post form -->
+            <div class="card-game rounded-xl p-5 mb-5">
+              <div class="flex gap-3 items-start">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=40&h=40&fit=crop&auto=format"
+                  alt="Avatar" class="w-10 h-10 rounded-full avatar-ring object-cover flex-shrink-0" />
+                <div class="flex-1">
+                  <textarea id="post-content" rows="3"
+                    placeholder="O que está rolando no campo de batalha?"
+                    class="neon-input w-full rounded-xl px-4 py-3 font-body text-sm resize-none"></textarea>
+                  <div class="flex items-center justify-between mt-3">
+                    <div class="flex gap-2">
+                      <button class="neon-btn rounded-lg px-3 py-1.5 font-mono text-xs">📷</button>
+                      <button class="neon-btn rounded-lg px-3 py-1.5 font-mono text-xs">🎬</button>
+                      <button class="neon-btn rounded-lg px-3 py-1.5 font-mono text-xs">GIF</button>
+                    </div>
+                    <button id="btn-publish" onclick="handlePublish(event)"
+                      class="neon-btn-solid rounded-lg px-5 py-1.5 font-display text-xs tracking-widest">
+                      PUBLICAR
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="feed-container" class="flex flex-col gap-4"></div>
+          </div>
+
+          <!-- ─── HIGHLIGHTS ─── -->
+          <div id="tab-highlights" class="tab-content">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <h2 class="font-display text-lg font-bold neon-text tracking-widest">HIGHLIGHTS</h2>
+              <div class="flex gap-2">
+                <button onclick="filterHL(this,'daily')"   class="hl-filter neon-btn-solid rounded-lg px-3 py-1 font-display text-xs">DIÁRIO</button>
+                <button onclick="filterHL(this,'weekly')"  class="hl-filter neon-btn rounded-lg px-3 py-1 font-display text-xs">SEMANAL</button>
+                <button onclick="filterHL(this,'monthly')" class="hl-filter neon-btn rounded-lg px-3 py-1 font-display text-xs">MENSAL</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-4">
+              <div class="card-game rounded-xl overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=260&fit=crop&auto=format" alt="Highlight" class="w-full h-44 object-cover" />
+                <div class="p-4">
+                  <span class="inline-block neon-btn-solid rounded px-2 py-0.5 font-display text-xs mb-2">🔥 HIGHLIGHT DO DIA</span>
+                  <h3 class="font-display font-bold neon-text text-sm">DARK_VIPER — 5 kills em 8 segundos</h3>
+                  <p class="font-mono text-xs mt-1" style="color:#2a5a2a">CS2 Competitivo · Dust2 · 2h atrás</p>
+                  <div class="flex gap-5 mt-3 font-mono text-xs" style="color:#4a7a4a">
+                    <span>👁️ 14.2k</span><span>❤️ 2.3k</span><span>💬 342</span>
+                  </div>
+                </div>
+              </div>
+              <div class="card-game rounded-xl overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&h=200&fit=crop&auto=format" alt="Highlight" class="w-full h-36 object-cover" />
+                <div class="p-4">
+                  <span class="inline-block neon-btn rounded px-2 py-0.5 font-display text-xs mb-2">⚡ TOP SEMANAL</span>
+                  <h3 class="font-display font-bold neon-text text-sm">N3ON_GHOST — 18 vitórias consecutivas</h3>
+                  <p class="font-mono text-xs mt-1" style="color:#2a5a2a">Valorant Ranked · Esta semana</p>
+                  <div class="flex gap-5 mt-3 font-mono text-xs" style="color:#4a7a4a">
+                    <span>👁️ 9.7k</span><span>❤️ 1.8k</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TÁTICO ─── -->
+          <div id="tab-tactical" class="tab-content">
+            <h2 class="font-display text-lg font-bold neon-text tracking-widest mb-4">PLANO TÁTICO</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div class="card-game rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-xl">🗺️</span>
+                  <h3 class="font-display text-sm font-bold neon-text">Mapa: Mirage</h3>
+                </div>
+                <p class="font-mono text-xs mb-3" style="color:#4a7a4a">Estratégia ativa da semana</p>
+                <div class="rounded-lg h-24 flex items-center justify-center mb-3"
+                  style="background:#0a120a;border:1px solid #00FF4122">
+                  <span class="font-mono text-xs" style="color:#2a5a2a">[ MINIMAP — A-RUSH ]</span>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex items-center gap-2 font-mono text-xs" style="color:#80c880">
+                    <span class="w-2 h-2 rounded-full" style="background:#00FF41"></span> Entry: DARK_VIPER + N3ON
+                  </div>
+                  <div class="flex items-center gap-2 font-mono text-xs" style="color:#80c880">
+                    <span class="w-2 h-2 rounded-full bg-yellow-400"></span> Support: COBRA_K
+                  </div>
+                  <div class="flex items-center gap-2 font-mono text-xs" style="color:#80c880">
+                    <span class="w-2 h-2 rounded-full bg-blue-400"></span> Lurk: PHANTOM_X
+                  </div>
+                </div>
+              </div>
+              <div class="card-game rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-4">
+                  <span class="text-xl">📊</span>
+                  <h3 class="font-display text-sm font-bold neon-text">Stats da Equipe</h3>
+                </div>
+                <div class="flex flex-col gap-3">
+                  <div>
+                    <div class="flex justify-between font-mono text-xs mb-1" style="color:#4a7a4a">
+                      <span>Win Rate</span><span class="neon-text">73%</span>
+                    </div>
+                    <div class="w-full rounded-full h-1.5" style="background:#0a1f0a">
+                      <div class="h-1.5 rounded-full" style="width:73%;background:#00FF41"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex justify-between font-mono text-xs mb-1" style="color:#4a7a4a">
+                      <span>K/D Ratio</span><span class="neon-text">2.4</span>
+                    </div>
+                    <div class="w-full rounded-full h-1.5" style="background:#0a1f0a">
+                      <div class="h-1.5 rounded-full" style="width:80%;background:#00FF41"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex justify-between font-mono text-xs mb-1" style="color:#4a7a4a">
+                      <span>Headshot %</span><span class="neon-text">58%</span>
+                    </div>
+                    <div class="w-full rounded-full h-1.5" style="background:#0a1f0a">
+                      <div class="h-1.5 rounded-full" style="width:58%;background:#00FF41"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex justify-between font-mono text-xs mb-1" style="color:#4a7a4a">
+                      <span>Clutch Rate</span><span class="neon-text">41%</span>
+                    </div>
+                    <div class="w-full rounded-full h-1.5" style="background:#0a1f0a">
+                      <div class="h-1.5 rounded-full" style="width:41%;background:#00FF41"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card-game rounded-xl p-4">
+              <h3 class="font-display text-sm font-bold neon-text mb-3">📋 Planos Salvos</h3>
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-neon-glow transition-colors"
+                  style="background:#080A08;border:1px solid #00FF4122">
+                  <div>
+                    <p class="font-display text-xs font-bold" style="color:#a0d0a0">Rush B Smoke Double</p>
+                    <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">3 dias atrás · 12 upvotes</p>
+                  </div>
+                  <span class="neon-text font-display text-xs">EDITAR →</span>
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-neon-glow transition-colors"
+                  style="background:#080A08;border:1px solid #00FF4122">
+                  <div>
+                    <p class="font-display text-xs font-bold" style="color:#a0d0a0">Mid Control Inferno</p>
+                    <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">1 semana atrás · 28 upvotes</p>
+                  </div>
+                  <span class="neon-text font-display text-xs">EDITAR →</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── VÍDEOS ─── -->
+          <div id="tab-videos" class="tab-content">
+            <h2 class="font-display text-lg font-bold neon-text tracking-widest mb-4">VÍDEOS</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="card-game rounded-xl overflow-hidden cursor-pointer group">
+                <div class="relative">
+                  <img src="https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=400&h=220&fit=crop&auto=format"
+                    alt="video" class="w-full h-36 object-cover transition-opacity group-hover:opacity-75" />
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-11 h-11 rounded-full flex items-center justify-center pulse-neon"
+                      style="background:#00FF41cc">
+                      <svg class="w-4 h-4 ml-0.5" style="color:#080A08" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <span class="absolute bottom-2 right-2 rounded px-1.5 py-0.5 font-mono text-xs neon-text"
+                    style="background:#000000cc">4:32</span>
+                </div>
+                <div class="p-3">
+                  <h4 class="font-display text-xs font-bold leading-tight" style="color:#a0d0a0">Como chegar ao Global Elite em 30 dias</h4>
+                  <p class="font-mono text-xs mt-1" style="color:#2a5a2a">DARK_VIPER · 48k views · 2 dias</p>
+                </div>
+              </div>
+              <div class="card-game rounded-xl overflow-hidden cursor-pointer group">
+                <div class="relative">
+                  <img src="https://images.unsplash.com/photo-1560419015-7c427e8ae5ba?w=400&h=220&fit=crop&auto=format"
+                    alt="video" class="w-full h-36 object-cover transition-opacity group-hover:opacity-75" />
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-11 h-11 rounded-full flex items-center justify-center pulse-neon"
+                      style="background:#00FF41cc">
+                      <svg class="w-4 h-4 ml-0.5" style="color:#080A08" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <span class="absolute bottom-2 right-2 rounded px-1.5 py-0.5 font-mono text-xs neon-text"
+                    style="background:#000000cc">12:07</span>
+                </div>
+                <div class="p-3">
+                  <h4 class="font-display text-xs font-bold leading-tight" style="color:#a0d0a0">Top 10 plays da semana — npme Community</h4>
+                  <p class="font-mono text-xs mt-1" style="color:#2a5a2a">npme Oficial · 102k views · 1 semana</p>
+                </div>
+              </div>
+              <div class="card-game rounded-xl overflow-hidden cursor-pointer group">
+                <div class="relative">
+                  <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=220&fit=crop&auto=format"
+                    alt="video" class="w-full h-36 object-cover transition-opacity group-hover:opacity-75" />
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-11 h-11 rounded-full flex items-center justify-center pulse-neon"
+                      style="background:#00FF41cc">
+                      <svg class="w-4 h-4 ml-0.5" style="color:#080A08" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <span class="absolute bottom-2 right-2 rounded px-1.5 py-0.5 font-mono text-xs neon-text"
+                    style="background:#000000cc">7:55</span>
+                </div>
+                <div class="p-3">
+                  <h4 class="font-display text-xs font-bold leading-tight" style="color:#a0d0a0">AWP Tricks que ninguém te ensinou</h4>
+                  <p class="font-mono text-xs mt-1" style="color:#2a5a2a">PHANTOM_X · 31k views · 4 dias</p>
+                </div>
+              </div>
+              <div class="card-game rounded-xl overflow-hidden cursor-pointer group">
+                <div class="relative">
+                  <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=220&fit=crop&auto=format"
+                    alt="video" class="w-full h-36 object-cover transition-opacity group-hover:opacity-75" />
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-11 h-11 rounded-full flex items-center justify-center pulse-neon"
+                      style="background:#00FF41cc">
+                      <svg class="w-4 h-4 ml-0.5" style="color:#080A08" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <span class="absolute bottom-2 right-2 rounded px-1.5 py-0.5 font-mono text-xs neon-text"
+                    style="background:#000000cc">22:14</span>
+                </div>
+                <div class="p-3">
+                  <h4 class="font-display text-xs font-bold leading-tight" style="color:#a0d0a0">Setup Completo para FPS Competitivo 2026</h4>
+                  <p class="font-mono text-xs mt-1" style="color:#2a5a2a">N3ON_GHOST · 87k views · 3 dias</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── RANKING ─── -->
+          <div id="tab-ranking" class="tab-content">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="font-display text-lg font-bold neon-text tracking-widest">RANKING GLOBAL</h2>
+              <span class="font-mono text-xs" style="color:#2a5a2a">Atualizado: hoje</span>
+            </div>
+            <!-- Podium -->
+            <div class="grid grid-cols-3 gap-3 mb-5">
+              <div class="card-game rounded-xl p-3 text-center col-start-1 row-start-1 mt-4 opacity-90">
+                <div class="font-display text-2xl mb-1" style="color:#C0C0C0;text-shadow:0 0 8px #C0C0C099">2</div>
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=56&h=56&fit=crop&auto=format"
+                  alt="p2" class="w-10 h-10 rounded-full mx-auto object-cover" style="border:2px solid #C0C0C0" />
+                <p class="font-display text-xs font-bold mt-2" style="color:#C0C0C0">N3ON_GHOST</p>
+                <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">91,100 pts</p>
+              </div>
+              <div class="card-game rounded-xl p-3 text-center col-start-2 row-start-1">
+                <div class="font-display text-3xl mb-1" style="color:#FFD700;text-shadow:0 0 12px #FFD70099">1</div>
+                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&auto=format"
+                  alt="p1" class="w-14 h-14 rounded-full mx-auto object-cover mb-2" style="border:2px solid #FFD700" />
+                <p class="font-display text-xs font-bold" style="color:#FFD700">DARK_VIPER</p>
+                <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">98,420 pts</p>
+                <span class="inline-block font-mono text-xs px-2 py-0.5 rounded mt-1"
+                  style="border:1px solid #FFD70066;color:#FFD700;background:#FFD70022">Lendário</span>
+              </div>
+              <div class="card-game rounded-xl p-3 text-center col-start-3 row-start-1 mt-4 opacity-90">
+                <div class="font-display text-2xl mb-1" style="color:#CD7F32;text-shadow:0 0 8px #CD7F3299">3</div>
+                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=56&h=56&fit=crop&auto=format"
+                  alt="p3" class="w-10 h-10 rounded-full mx-auto object-cover" style="border:2px solid #CD7F32" />
+                <p class="font-display text-xs font-bold mt-2" style="color:#CD7F32">PHANTOM_X</p>
+                <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">87,340 pts</p>
+              </div>
+            </div>
+            <!-- Table -->
+            <div class="card-game rounded-xl overflow-hidden">
+              <table class="w-full">
+                <thead>
+                  <tr style="border-bottom:1px solid #00FF4122">
+                    <th class="text-left font-display text-xs p-3 tracking-wider" style="color:#2a5a2a">#</th>
+                    <th class="text-left font-display text-xs p-3 tracking-wider" style="color:#2a5a2a">JOGADOR</th>
+                    <th class="text-right font-display text-xs p-3 tracking-wider hidden sm:table-cell" style="color:#2a5a2a">RANK</th>
+                    <th class="text-right font-display text-xs p-3 tracking-wider" style="color:#2a5a2a">PONTOS</th>
+                    <th class="text-right font-display text-xs p-3 tracking-wider hidden sm:table-cell" style="color:#2a5a2a">W/R</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="hover:bg-neon-glow transition-colors cursor-pointer" style="border-bottom:1px solid #00FF4111">
+                    <td class="p-3 font-mono text-xs" style="color:#2a5a2a">4</td>
+                    <td class="p-3"><div class="flex items-center gap-2">
+                      <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=32&h=32&fit=crop&auto=format"
+                        class="w-7 h-7 rounded-full object-cover" alt="p4" />
+                      <span class="font-display text-xs font-bold" style="color:#a0d0a0">COBRA_K</span>
+                    </div></td>
+                    <td class="p-3 text-right font-mono text-xs text-purple-400 hidden sm:table-cell">Diamond I</td>
+                    <td class="p-3 text-right font-mono text-xs neon-text">82,100</td>
+                    <td class="p-3 text-right font-mono text-xs hidden sm:table-cell" style="color:#4a7a4a">71%</td>
+                  </tr>
+                  <tr class="hover:bg-neon-glow transition-colors cursor-pointer" style="border-bottom:1px solid #00FF4111">
+                    <td class="p-3 font-mono text-xs" style="color:#2a5a2a">5</td>
+                    <td class="p-3"><div class="flex items-center gap-2">
+                      <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=32&h=32&fit=crop&auto=format"
+                        class="w-7 h-7 rounded-full object-cover" alt="p5" />
+                      <span class="font-display text-xs font-bold" style="color:#a0d0a0">VENOM_404</span>
+                    </div></td>
+                    <td class="p-3 text-right font-mono text-xs text-purple-400 hidden sm:table-cell">Diamond I</td>
+                    <td class="p-3 text-right font-mono text-xs neon-text">79,880</td>
+                    <td class="p-3 text-right font-mono text-xs hidden sm:table-cell" style="color:#4a7a4a">68%</td>
+                  </tr>
+                  <tr class="hover:bg-neon-glow transition-colors cursor-pointer" style="background:#00FF4108">
+                    <td class="p-3 font-mono text-xs font-bold neon-text">47</td>
+                    <td class="p-3"><div class="flex items-center gap-2">
+                      <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=32&h=32&fit=crop&auto=format"
+                        class="w-7 h-7 rounded-full avatar-ring object-cover" alt="you" />
+                      <span class="font-display text-xs font-bold neon-text">VOCÊ</span>
+                    </div></td>
+                    <td class="p-3 text-right font-mono text-xs text-blue-400 hidden sm:table-cell">Diamond II</td>
+                    <td class="p-3 text-right font-mono text-xs neon-text">41,220</td>
+                    <td class="p-3 text-right font-mono text-xs hidden sm:table-cell" style="color:#4a7a4a">89%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ─── EMBLEMAS ─── -->
+          <div id="tab-emblemas" class="tab-content">
+            <h2 class="font-display text-lg font-bold neon-text tracking-widest mb-1">EMBLEMAS</h2>
+            <p class="font-mono text-xs mb-5" style="color:#2a5a2a">Conquistas que provam seu nível — exiba com orgulho</p>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div class="badge-item rounded-xl p-4 text-center">
+                <div class="text-4xl mb-3">🎯</div>
+                <h4 class="font-display text-xs font-bold neon-text">HEADSHOT KING</h4>
+                <p class="font-mono text-xs mt-1" style="color:#4a7a4a">+80% HS Rate</p>
+                <div class="h-px my-2" style="background:#00FF4122"></div>
+                <p class="font-mono text-xs" style="color:#4a7a4a">Desbloqueado ✓</p>
+              </div>
+              <div class="badge-item rounded-xl p-4 text-center">
+                <div class="text-4xl mb-3">🔥</div>
+                <h4 class="font-display text-xs font-bold neon-text">ON FIRE</h4>
+                <p class="font-mono text-xs mt-1" style="color:#4a7a4a">10 wins seguidas</p>
+                <div class="h-px my-2" style="background:#00FF4122"></div>
+                <p class="font-mono text-xs" style="color:#4a7a4a">Desbloqueado ✓</p>
+              </div>
+              <div class="badge-item rounded-xl p-4 text-center">
+                <div class="text-4xl mb-3">⚔️</div>
+                <h4 class="font-display text-xs font-bold neon-text">DUELIST</h4>
+                <p class="font-mono text-xs mt-1" style="color:#4a7a4a">50 duelos vencidos</p>
+                <div class="h-px my-2" style="background:#00FF4122"></div>
+                <p class="font-mono text-xs" style="color:#4a7a4a">Desbloqueado ✓</p>
+              </div>
+              <div class="badge-item rounded-xl p-4 text-center opacity-40">
+                <div class="text-4xl mb-3" style="filter:grayscale(1)">👑</div>
+                <h4 class="font-display text-xs font-bold" style="color:#3a5a3a">LEGEND</h4>
+                <p class="font-mono text-xs mt-1" style="color:#1a3a1a">Chegar ao Top 10</p>
+                <div class="h-px my-2" style="background:#00FF4111"></div>
+                <p class="font-mono text-xs" style="color:#1a3a1a">Bloqueado 🔒</p>
+              </div>
+              <div class="badge-item rounded-xl p-4 text-center">
+                <div class="text-4xl mb-3">🐍</div>
+                <h4 class="font-display text-xs font-bold neon-text">LURKER</h4>
+                <p class="font-mono text-xs mt-1" style="color:#4a7a4a">Expert em lurk</p>
+                <div class="h-px my-2" style="background:#00FF4122"></div>
+                <p class="font-mono text-xs" style="color:#4a7a4a">Desbloqueado ✓</p>
+              </div>
+              <div class="badge-item rounded-xl p-4 text-center opacity-60">
+                <div class="text-4xl mb-3">💎</div>
+                <h4 class="font-display text-xs font-bold" style="color:#3a7a3a">DIAMOND RUSH</h4>
+                <p class="font-mono text-xs mt-1" style="color:#2a5a2a">Subir 3 ranks em 7d</p>
+                <div class="h-px my-2" style="background:#00FF4122"></div>
+                <div>
+                  <div class="flex justify-between font-mono text-xs mb-1" style="color:#2a5a2a">
+                    <span>Progresso</span><span>67%</span>
+                  </div>
+                  <div class="w-full rounded-full h-1" style="background:#0a1f0a">
+                    <div class="h-1 rounded-full" style="width:67%;background:#00FF41"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── DUELOS ─── -->
+          <div id="tab-duels" class="tab-content">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="font-display text-lg font-bold neon-text tracking-widest">DUELOS</h2>
+              <button class="neon-btn-solid rounded-lg px-4 py-1.5 font-display text-xs tracking-widest">+ DESAFIAR</button>
+            </div>
+            <div class="flex flex-col gap-4">
+              <!-- Live -->
+              <div class="duel-card rounded-xl p-4">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-mono text-xs neon-text rounded px-2 py-0.5" style="background:#00FF4115;border:1px solid #00FF4155">⚡ AO VIVO</span>
+                  <span class="font-mono text-xs" style="color:#2a5a2a">CS2 · Ranked</span>
+                </div>
+                <div class="flex items-center justify-between mt-3">
+                  <div class="text-center flex-1">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=56&h=56&fit=crop&auto=format"
+                      alt="you" class="w-14 h-14 rounded-full avatar-ring object-cover mx-auto mb-2" />
+                    <p class="font-display text-xs font-bold neon-text">VOCÊ</p>
+                    <p class="font-mono text-2xl font-bold neon-text mt-1">14</p>
+                  </div>
+                  <div class="text-center px-4">
+                    <p class="font-display font-black neon-text text-xl">VS</p>
+                    <p class="font-mono text-xs mt-1" style="color:#2a5a2a">Round 24/30</p>
+                    <div class="w-16 rounded-full h-1 mt-1" style="background:#0a1f0a">
+                      <div class="h-1 rounded-full" style="width:80%;background:#00FF41"></div>
+                    </div>
+                  </div>
+                  <div class="text-center flex-1">
+                    <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=56&h=56&fit=crop&auto=format"
+                      alt="opp" class="w-14 h-14 rounded-full object-cover mx-auto mb-2" style="border:2px solid #ef4444" />
+                    <p class="font-display text-xs font-bold text-red-400">COBRA_K</p>
+                    <p class="font-mono text-2xl font-bold text-red-400 mt-1">11</p>
+                  </div>
+                </div>
+              </div>
+              <!-- Pending -->
+              <div class="card-game rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="font-mono text-xs text-yellow-400 rounded px-2 py-0.5"
+                    style="background:#FFD70015;border:1px solid #FFD70044">⏳ AGUARDANDO</span>
+                  <span class="font-mono text-xs" style="color:#2a5a2a">Valorant · Unrated</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=40&h=40&fit=crop&auto=format"
+                      alt="challenger" class="w-10 h-10 rounded-full object-cover" style="border:2px solid #FFD700" />
+                    <div>
+                      <p class="font-display text-xs font-bold text-yellow-400">VENOM_404</p>
+                      <p class="font-mono text-xs" style="color:#2a5a2a">te desafiou · 15 min atrás</p>
+                    </div>
+                  </div>
+                  <div class="flex gap-2">
+                    <button class="neon-btn-solid rounded-lg px-3 py-1.5 font-display text-xs">ACEITAR</button>
+                    <button class="rounded-lg px-3 py-1.5 font-display text-xs text-red-400"
+                      style="border:1px solid #ef444466">RECUSAR</button>
+                  </div>
+                </div>
+              </div>
+              <!-- Done -->
+              <div class="card-game rounded-xl p-4 opacity-60">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="font-mono text-xs rounded px-2 py-0.5"
+                    style="color:#4a7a4a;background:#00FF4111">✅ FINALIZADO</span>
+                  <span class="font-mono text-xs" style="color:#2a5a2a">Ontem · CS2</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&auto=format"
+                      alt="opp" class="w-10 h-10 rounded-full object-cover" style="border:2px solid #2a5a2a" />
+                    <div>
+                      <p class="font-display text-xs font-bold" style="color:#4a7a4a">N3ON_GHOST</p>
+                      <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">Resultado: 16 — 9</p>
+                    </div>
+                  </div>
+                  <span class="font-display text-sm font-bold neon-text">VITÓRIA +280 XP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── LOJA ─── -->
+          <div id="tab-store" class="tab-content">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="font-display text-lg font-bold neon-text tracking-widest">LOJA / TROCA</h2>
+              <div class="flex items-center gap-2 card-game rounded-lg px-3 py-1.5">
+                <span>💰</span>
+                <span class="font-display text-sm font-bold neon-text">4,200</span>
+                <span class="font-mono text-xs" style="color:#2a5a2a">npCoins</span>
+              </div>
+            </div>
+            <div class="flex gap-2 mb-5 overflow-x-auto pb-1">
+              <button class="whitespace-nowrap neon-btn-solid rounded-lg px-4 py-1.5 font-display text-xs">TODOS</button>
+              <button class="whitespace-nowrap neon-btn rounded-lg px-4 py-1.5 font-display text-xs">AVATARES</button>
+              <button class="whitespace-nowrap neon-btn rounded-lg px-4 py-1.5 font-display text-xs">BORDAS</button>
+              <button class="whitespace-nowrap neon-btn rounded-lg px-4 py-1.5 font-display text-xs">EMBLEMAS</button>
+              <button class="whitespace-nowrap neon-btn rounded-lg px-4 py-1.5 font-display text-xs">BOOSTERS</button>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div class="card-game rounded-xl overflow-hidden cursor-pointer hover:shadow-neon transition-shadow">
+                <div class="h-28 flex items-center justify-center text-5xl"
+                  style="background:linear-gradient(135deg,#0a2a1a,#080A08)">🤖</div>
+                <div class="p-3">
+                  <h4 class="font-display text-xs font-bold" style="color:#a0d0a0">Cyber Mech</h4>
+                  <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">Raro · Limitado</p>
+                  <div class="flex items-center justify-between mt-3">
+                    <span class="font-display text-sm font-bold neon-text">1,200 <span class="font-mono text-xs" style="color:#2a5a2a">npc</span></span>
+                    <button class="neon-btn-solid rounded px-2 py-1 font-display text-xs">BUY</button>
+                  </div>
+                </div>
+              </div>
+              <div class="card-game rounded-xl overflow-hidden cursor-pointer hover:shadow-neon transition-shadow">
+                <div class="h-28 flex items-center justify-center text-5xl"
+                  style="background:linear-gradient(135deg,#1a0a2a,#080A08)">🌀</div>
+                <div class="p-3">
+                  <h4 class="font-display text-xs font-bold" style="color:#a0d0a0">Borda Vortex</h4>
+                  <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">Épico · +XP Visual</p>
+                  <div class="flex items-center justify-between mt-3">
+                    <span class="font-display text-sm font-bold neon-text">800 <span class="font-mono text-xs" style="color:#2a5a2a">npc</span></span>
+                    <button class="neon-btn-solid rounded px-2 py-1 font-display text-xs">BUY</button>
+                  </div>
+                </div>
+              </div>
+              <div class="card-game rounded-xl overflow-hidden cursor-pointer hover:shadow-neon transition-shadow">
+                <div class="h-28 flex items-center justify-center text-5xl"
+                  style="background:linear-gradient(135deg,#2a2000,#080A08)">⚡</div>
+                <div class="p-3">
+                  <h4 class="font-display text-xs font-bold" style="color:#a0d0a0">XP Booster x2</h4>
+                  <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">7 dias de duração</p>
+                  <div class="flex items-center justify-between mt-3">
+                    <span class="font-display text-sm font-bold neon-text">500 <span class="font-mono text-xs" style="color:#2a5a2a">npc</span></span>
+                    <button class="neon-btn-solid rounded px-2 py-1 font-display text-xs">BUY</button>
+                  </div>
+                </div>
+              </div>
+              <div class="card-game rounded-xl overflow-hidden cursor-pointer hover:shadow-neon transition-shadow">
+                <div class="h-28 flex items-center justify-center text-5xl"
+                  style="background:linear-gradient(135deg,#2a0a0a,#080A08)">💀</div>
+                <div class="p-3">
+                  <h4 class="font-display text-xs font-bold" style="color:#a0d0a0">Emblema SKULL</h4>
+                  <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">Lendário · Animado</p>
+                  <div class="flex items-center justify-between mt-3">
+                    <span class="font-display text-sm font-bold neon-text">3,000 <span class="font-mono text-xs" style="color:#2a5a2a">npc</span></span>
+                    <button class="neon-btn rounded px-2 py-1 font-display text-xs" style="color:#4a7a4a;border-color:#2a5a2a">TROCA</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT SIDEBAR -->
+        <aside class="hidden lg:flex lg:col-span-3 flex-col gap-4">
+
+          <div class="card-game rounded-xl p-4">
+            <h4 class="font-display text-xs tracking-widest mb-3 flex items-center gap-2" style="color:#2a5a2a">
+              <span class="w-2 h-2 rounded-full pulse-neon" style="background:#00FF41"></span> ONLINE AGORA
+            </h4>
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&auto=format"
+                    alt="p" class="w-7 h-7 rounded-full object-cover" style="border:1px solid #00FF41" />
+                  <div>
+                    <p class="font-display text-xs font-bold" style="color:#a0d0a0">N3ON_GHOST</p>
+                    <p class="font-mono text-xs" style="color:#2a5a2a">CS2 · Competitivo</p>
+                  </div>
+                </div>
+                <button class="neon-btn rounded px-2 py-0.5 font-display text-xs">SEGUIR</button>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=32&h=32&fit=crop&auto=format"
+                    alt="p" class="w-7 h-7 rounded-full object-cover" style="border:1px solid #00FF41" />
+                  <div>
+                    <p class="font-display text-xs font-bold" style="color:#a0d0a0">COBRA_K</p>
+                    <p class="font-mono text-xs" style="color:#2a5a2a">Valorant · Ranked</p>
+                  </div>
+                </div>
+                <button class="neon-btn rounded px-2 py-0.5 font-display text-xs">SEGUIR</button>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=32&h=32&fit=crop&auto=format"
+                    alt="p" class="w-7 h-7 rounded-full object-cover" style="border:1px solid #2a5a2a" />
+                  <div>
+                    <p class="font-display text-xs font-bold" style="color:#a0d0a0">VENOM_404</p>
+                    <p class="font-mono text-xs" style="color:#2a5a2a">Apex · Ranked</p>
+                  </div>
+                </div>
+                <span class="font-display text-xs neon-text">✓ SEGUINDO</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-game rounded-xl p-4">
+            <h4 class="font-display text-xs tracking-widest mb-3" style="color:#2a5a2a">TRENDING</h4>
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-neon-glow transition-colors cursor-pointer">
+                <span class="font-display text-xl font-black" style="color:#00FF4133">01</span>
+                <div>
+                  <p class="font-mono text-xs neon-text">#CS2Update</p>
+                  <p class="font-mono text-xs" style="color:#2a5a2a">14.2k posts</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-neon-glow transition-colors cursor-pointer">
+                <span class="font-display text-xl font-black" style="color:#00FF4133">02</span>
+                <div>
+                  <p class="font-mono text-xs neon-text">#ValoBrasil</p>
+                  <p class="font-mono text-xs" style="color:#2a5a2a">9.8k posts</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-neon-glow transition-colors cursor-pointer">
+                <span class="font-display text-xl font-black" style="color:#00FF4133">03</span>
+                <div>
+                  <p class="font-mono text-xs neon-text">#npmeGaming</p>
+                  <p class="font-mono text-xs" style="color:#2a5a2a">6.3k posts</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-neon-glow transition-colors cursor-pointer">
+                <span class="font-display text-xl font-black" style="color:#00FF4133">04</span>
+                <div>
+                  <p class="font-mono text-xs neon-text">#ApexLegends</p>
+                  <p class="font-mono text-xs" style="color:#2a5a2a">4.1k posts</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-game rounded-xl p-4">
+            <h4 class="font-display text-xs tracking-widest mb-3" style="color:#2a5a2a">EVENTOS</h4>
+            <div class="flex flex-col gap-3">
+              <div class="pl-3" style="border-left:2px solid #00FF41">
+                <p class="font-display text-xs font-bold" style="color:#a0d0a0">npme Cup #12</p>
+                <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">CS2 · 5v5 · Amanhã 20h</p>
+                <p class="font-mono text-xs neon-text mt-1">R$500 em prêmios</p>
+              </div>
+              <div class="pl-3" style="border-left:2px solid #2a5a2a">
+                <p class="font-display text-xs font-bold" style="color:#4a7a4a">Valorant Daily</p>
+                <p class="font-mono text-xs mt-0.5" style="color:#2a5a2a">Sáb 16 Ago · 19h</p>
+                <p class="font-mono text-xs mt-1" style="color:#4a7a4a">+1,000 XP para top 3</p>
+              </div>
+            </div>
+          </div>
+
+        </aside>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"
+    class="fixed bottom-6 right-6 z-50 opacity-0 pointer-events-none transition-all duration-300"
+    style="transform:translateY(12px)">
+    <div class="card-game rounded-xl px-5 py-3 flex items-center gap-3"
+      style="border-color:#00FF4155;box-shadow:0 0 20px #00FF4133">
+      <span id="toast-icon" class="text-lg">✅</span>
+      <span id="toast-msg" class="font-display text-xs neon-text tracking-wide"></span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- JAVASCRIPT                                                     -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <script>
+    var currentUser = null;
+    var userPosts = [];
+
+    // ── Toast ──
+    function showToast(msg, icon) {
+      icon = icon || '✅';
+      var el = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      document.getElementById('toast-icon').textContent = icon;
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+      el.style.pointerEvents = 'auto';
+      setTimeout(function () {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(12px)';
+        el.style.pointerEvents = 'none';
+      }, 3000);
+    }
+
+    // ── Auth tab ──
+    function switchAuthTab(tab) {
+      var lf = document.getElementById('form-login');
+      var rf = document.getElementById('form-register');
+      var lb = document.getElementById('tab-login-btn');
+      var rb = document.getElementById('tab-register-btn');
+      if (tab === 'login') {
+        lf.classList.remove('hidden');
+        rf.classList.add('hidden');
+        lb.classList.add('neon-btn-solid');
+        rb.classList.remove('neon-btn-solid');
+        rb.style.color = '#4a7a4a';
+        lb.style.color = '';
+      } else {
+        rf.classList.remove('hidden');
+        lf.classList.add('hidden');
+        rb.classList.add('neon-btn-solid');
+        lb.classList.remove('neon-btn-solid');
+        lb.style.color = '#4a7a4a';
+        rb.style.color = '';
+      }
+    }
+
+    // ── Login ──
+    function handleLogin(event) {
+      event.preventDefault();
+      var email    = document.getElementById('login-email').value;
+      var password = document.getElementById('login-password').value;
+      console.log('[npme] Login attempt:', { email: email, password: '***' });
+
+      if (!email || !password) { showToast('Preencha todos os campos', '⚠️'); return; }
+
+      var btn = document.getElementById('btn-login');
+      btn.textContent = 'CONECTANDO...';
+      btn.disabled = true;
+
+      setTimeout(function () {
+        var username = email.split('@')[0].toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+        currentUser = { email: email, username: username };
+        document.getElementById('user-display-name').textContent = username;
+        document.getElementById('sidebar-username').textContent = username;
+        enterApp();
+        btn.textContent = 'INICIAR SESSÃO';
+        btn.disabled = false;
+      }, 800);
+    }
+
+    // ── Register ──
+    function handleRegister(event) {
+      event.preventDefault();
+      var name     = document.getElementById('register-name').value;
+      var email    = document.getElementById('register-email').value;
+      var password = document.getElementById('register-password').value;
+      console.log('[npme] Register attempt:', { name: name, email: email, password: '***' });
+
+      if (!name || !email || !password) { showToast('Preencha todos os campos', '⚠️'); return; }
+      if (password.length < 8) { showToast('Senha deve ter ao menos 8 caracteres', '⚠️'); return; }
+
+      var btn = document.getElementById('btn-register');
+      btn.textContent = 'CRIANDO...';
+      btn.disabled = true;
+
+      setTimeout(function () {
+        var username = name.toUpperCase().replace(/\s+/g, '_');
+        currentUser = { email: email, username: username };
+        document.getElementById('user-display-name').textContent = username;
+        document.getElementById('sidebar-username').textContent = username;
+        enterApp();
+        showToast('Bem-vindo, ' + username + '!', '🎮');
+        btn.textContent = 'CRIAR CONTA';
+        btn.disabled = false;
+      }, 800);
+    }
+
+    // ── Screen transitions ──
+    function enterApp() {
+      document.getElementById('screen-auth').style.display = 'none';
+      document.getElementById('screen-main').style.display = 'flex';
+      renderFeed();
+      showToast('Bem-vindo à arena!', '🎮');
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      document.getElementById('screen-main').style.display = 'none';
+      document.getElementById('screen-auth').style.display = 'flex';
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+      switchAuthTab('login');
+      showToast('Sessão encerrada', '👾');
+    }
+
+    // ── Tab navigation ──
+    function showTab(name) {
+      document.querySelectorAll('.tab-content').forEach(function (el) {
+        el.classList.remove('active');
+      });
+      document.querySelectorAll('.nav-item').forEach(function (btn) {
+        btn.classList.remove('active');
+      });
+      var tab = document.getElementById('tab-' + name);
+      if (tab) tab.classList.add('active');
+      document.querySelectorAll('[data-tab="' + name + '"]').forEach(function (btn) {
+        btn.classList.add('active');
+      });
+    }
+
+    // ── Publish ──
+    function handlePublish(event) {
+      event.preventDefault();
+      var content = document.getElementById('post-content').value.trim();
+      console.log('[npme] Publish post:', { content: content, author: currentUser });
+
+      if (!content) { showToast('Escreva algo antes de publicar', '⚠️'); return; }
+
+      var games = ['CS2', 'Valorant', 'Apex', 'LoL', 'Fortnite'];
+      var post = {
+        id: Date.now(),
+        author: currentUser ? currentUser.username : 'PLAYER_1',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=40&h=40&fit=crop&auto=format',
+        content: content,
+        likes: 0,
+        comments: 0,
+        time: 'agora mesmo',
+        liked: false,
+        game: games[Math.floor(Math.random() * games.length)],
+      };
+      userPosts.unshift(post);
+      document.getElementById('post-content').value = '';
+      renderFeed();
+      showToast('Post publicado!', '🚀');
+    }
+
+    // ── Like ──
+    function toggleLike(id) {
+      var all = userPosts.concat(mockPosts);
+      var post = all.find(function (p) { return p.id === id; });
+      if (!post) return;
+      post.liked = !post.liked;
+      post.likes += post.liked ? 1 : -1;
+      var btn = document.querySelector('[data-like="' + id + '"]');
+      var cnt = document.querySelector('[data-like-count="' + id + '"]');
+      if (btn) { if (post.liked) btn.classList.add('liked'); else btn.classList.remove('liked'); }
+      if (cnt) cnt.textContent = post.likes;
+    }
+
+    // ── Mock posts ──
+    var mockPosts = [
+      {
+        id: 1, author: 'N3ON_GHOST', game: 'CS2',
+        content: 'Acabei de subir para Diamond I depois de 3 semanas! Quem quiser dicas de clutch 1v3, me manda mensagem 🎯 #CS2 #Ranked',
+        likes: 247, comments: 34, time: '12 min', liked: false,
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&auto=format',
+      },
+      {
+        id: 2, author: 'PHANTOM_X', game: 'Valorant',
+        content: 'Review honesto do patch 8.08 do Valorant: Cypher voltou ABSURDA. Win rate com ela foi de 31% para 71% em 2 dias. Testei em 40 partidas.',
+        likes: 512, comments: 88, time: '47 min', liked: false,
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&auto=format',
+      },
+      {
+        id: 3, author: 'COBRA_K', game: 'Apex',
+        content: 'Clutch 1v4 no final de círculo com 12 de vida. Coração parou literalmente. Clip no feed de vídeos 💀🔥',
+        likes: 1034, comments: 142, time: '1h 20min', liked: false,
+        avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=40&h=40&fit=crop&auto=format',
+        image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=260&fit=crop&auto=format',
+      },
+      {
+        id: 4, author: 'VENOM_404', game: 'LoL',
+        content: 'Quem quer montar time para o npme Cup #12? Preciso de Supp e ADC. Somos Diamond+. Discord na bio.',
+        likes: 89, comments: 23, time: '2h', liked: false,
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=40&h=40&fit=crop&auto=format',
+      },
+    ];
+
+    // ── Render feed ──
+    function renderFeed() {
+      var all = userPosts.concat(mockPosts);
+      var html = all.map(function (p) {
+        return '<div class="card-game rounded-xl p-5 post-card">' +
+          '<div class="flex items-start gap-3 mb-3">' +
+            '<img src="' + p.avatar + '" alt="' + p.author + '" class="w-10 h-10 rounded-full object-cover flex-shrink-0" style="border:1px solid #00FF4144" />' +
+            '<div class="flex-1 min-w-0">' +
+              '<div class="flex items-center gap-2 flex-wrap">' +
+                '<span class="font-display text-sm font-bold neon-text">' + p.author + '</span>' +
+                '<span class="font-mono text-xs rounded-full px-2 py-0.5" style="background:#0a1f0a;border:1px solid #00FF4122;color:#4a7a4a">' + p.game + '</span>' +
+                '<span class="font-mono text-xs ml-auto" style="color:#2a5a2a">' + p.time + '</span>' +
+              '</div>' +
+              '<p class="font-body text-sm mt-2 leading-relaxed" style="color:#c0e8c0">' + p.content + '</p>' +
+            '</div>' +
+          '</div>' +
+          (p.image ? '<img src="' + p.image + '" alt="" class="w-full rounded-lg mb-3 object-cover" style="height:176px" />' : '') +
+          '<div class="flex items-center gap-5 pt-3" style="border-top:1px solid #00FF4122">' +
+            '<button onclick="toggleLike(' + p.id + ')" data-like="' + p.id + '" class="like-btn flex items-center gap-1.5 font-mono text-xs transition-colors hover:text-neon' + (p.liked ? ' liked' : '') + '">' +
+              '<span>♥</span><span data-like-count="' + p.id + '">' + p.likes + '</span>' +
+            '</button>' +
+            '<button class="flex items-center gap-1.5 font-mono text-xs transition-colors hover:text-neon" style="color:#4a7a4a">' +
+              '<span>💬</span> ' + p.comments +
+            '</button>' +
+            '<button class="flex items-center gap-1.5 font-mono text-xs transition-colors hover:text-neon" style="color:#4a7a4a">' +
+              '↗ Compartilhar' +
+            '</button>' +
+            '<button class="ml-auto flex items-center gap-1.5 font-mono text-xs transition-colors hover:text-neon" style="color:#4a7a4a">' +
+              '⚔️ Desafiar' +
+            '</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      document.getElementById('feed-container').innerHTML = html;
+    }
+
+    // ── Highlight filter ──
+    function filterHL(btn, period) {
+      document.querySelectorAll('.hl-filter').forEach(function (b) {
+        b.classList.remove('neon-btn-solid');
+        b.classList.add('neon-btn');
+      });
+      btn.classList.add('neon-btn-solid');
+      btn.classList.remove('neon-btn');
+      var labels = { daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal' };
+      showToast('Highlights: ' + (labels[period] || period), '📊');
+    }
+
+    // ── Init ──
+    renderFeed();
+  </script>
+</body>
+</html>
